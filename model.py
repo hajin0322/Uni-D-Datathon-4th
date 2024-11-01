@@ -2,7 +2,26 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Multi-Head Downscaled Self-Attention (MDTA) 모듈
+'''
+Self-Attention / DownScaling
+1.  Self-Attention: 입력 데이터 안에서 중요한 부분을 찾는 과정
+    일반적인 Attention 과정에서는 모든 데이터를 서로 비교해 데이터 간의 상관관계를 계산
+    그래서 Query, Key, Value라는 세 가지 역할로 데이터를 변환해, Query와 Key의 유사성 비교 후 Value 추출
+    * Query: 우리가 집중해서 살펴보는 판단 데이터, "이 데이터가 다른 데이터와 얼마나 관련있는데?"
+    * Key: 다른 데이터(단어)가 자신을 나타내는 특성, "이 데이터는 어떤 특징을 가지고 있어."
+    * Value: Query와 Key의 유사도에 따른 값 반영
+
+2.  DownScaling: 데이터 크기나 채널 수을 줄이는 것
+    큰 이미지는 메모리와 계산량이 많이 들어, 이미지를 조금 작게(다운스케일) 만들어 계산 효율을 높임
+'''
+
+
+'''
+Multi-Head Downscaled Self-Attention (MDTA) 모듈
+MDTA는 이미지의 여러 영역을 보면서 각 영역이 얼마나 중요한지 찾고, 중요한 정보를 모아서 결과를 만드는 모델이다.
+다중 헤드로 나눠보면서 효율적으로 다양한 부분을 살펴보도록 도와주는 구조이다.
+# 중요 정보
+'''
 class MDTA(nn.Module):
     def __init__(self, channels, num_heads):
         super(MDTA, self).__init__()
@@ -36,7 +55,11 @@ class MDTA(nn.Module):
         return out
 
 
-# Gated-Dconv Feed-Forward Network (GDFN) 모듈
+'''
+Gated-Dconv Feed-Forward Network (GDFN) 모듈
+GDFN은 데이터를 한 번 필터링하는 모듈로, 중요한 정보를 선택하고 불필요한 정보는 줄여내는 역할을 한다.
+# 필터링
+'''
 class GDFN(nn.Module):
     def __init__(self, channels, expansion_factor):
         super(GDFN, self).__init__()
@@ -58,7 +81,11 @@ class GDFN(nn.Module):
         return x
 
 
-# 트랜스포머 블록 모듈
+'''
+트랜스포머 블록 모듈
+MDTA와 GDFN을 결합해 중요 정보 탐색 및 강화 과정을 반복하는 모듈이다.
+# 중요 정보 # 필터링
+'''
 class TransformerBlock(nn.Module):
     def __init__(self, channels, num_heads, expansion_factor):
         super(TransformerBlock, self).__init__()
@@ -77,7 +104,11 @@ class TransformerBlock(nn.Module):
         return x
 
 
-# Down-sampling 모듈
+'''
+Down-sampling 모듈
+DownSampling은 입력을 조금 더 작고 효율적으로 만들어주는 역할을 하며, 계산량을 줄이기 위한 모듈이다.
+# 효율
+'''
 class DownSample(nn.Module):
     def __init__(self, channels):
         super(DownSample, self).__init__()
