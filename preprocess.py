@@ -86,7 +86,7 @@ def preprocess_validation(base_dir):
     print('Validation preprocessing done')
 
 # 데이터셋의 경로 설정
-data_dir = '/data/hyeokseung1208/unid/data/'
+data_dir = './data/'
 training_base_dir = os.path.join(data_dir, 'Training')
 validation_base_dir = os.path.join(data_dir, 'Validation')
 

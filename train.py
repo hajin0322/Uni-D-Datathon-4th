@@ -16,21 +16,30 @@ from model import Restormer
 from torchvision.transforms import CenterCrop, Resize
 from PIL import Image
 
+'''
+1. 모델 하이퍼파라미터 수정(학습률, 배치 크기, 에폭 수 등)
+2. 데이터 증강 추가 또는 수정
+3. 학습 스케줄러 수정 (CosineAnnealing, StepLR 등)
+4. 손실 함수 및 최적화 방법 수정
+5. 다양한 모델 실험(모델 구조 변경 시 model.py의 일부를 참고)
+'''
+
+
 # 시작 시간 기록 (훈련 시간 측정)
 start_time = time.time()
 
-# 가중치 초기화 함수
+# 가중치 초기화 함수(모델 학습 초기 상태에서 좋은 분포로 가중치 설정)
 def weights_init(m):
     if isinstance(m, nn.Conv2d):
         nn.init.kaiming_uniform_(m.weight.data, mode='fan_in', nonlinearity='relu')
 
-# 이미지 로드 함수 (OpenCV 사용)
+# 이미지 로드 함수(OpenCV통해 RGB 형식으로 변환)
 def load_img(filepath):
     img = cv2.imread(filepath)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
 
-# 커스텀 데이터셋 클래스 정의
+# 커스텀 데이터셋 클래스 정의(데이터셋 정의, noisy이미지와 clean이미지를 받아 쌍으로 처리)
 class CustomDataset(Dataset):
     def __init__(self, clean_image_paths, noisy_image_paths, transform=None):
         # 각 이미지의 경로 목록 생성
@@ -87,37 +96,37 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 # 하이퍼파라미터 설정
-num_epochs = 1
-batch_size = 8
-learning_rate = 0.0005
+num_epochs = 1 # 학습할 에폭 수
+batch_size = 8 # 한 번에 처리할 이미지 묶음 크기
+learning_rate = 0.0005 # 학습률
 
 # 데이터셋 경로 설정
-noisy_image_paths = '/data/hyeokseung1208/unid/data/Training/noisy'
-clean_image_paths = '/data/hyeokseung1208/unid/data/Training/clean'
+noisy_image_paths = './data/Training/noisy'
+clean_image_paths = './data/Training/clean'
 
 # 데이터 전처리 파이프라인 정의
 train_transform = Compose([
-    ToTensor(),
+    ToTensor(), # 텐서 변환 (3차원 배열)
 ])
 
 # 데이터셋 로드
 train_dataset = CustomDataset(clean_image_paths, noisy_image_paths, transform=train_transform)
 
-# 데이터 로더 설정
+# 데이터 로더 설정 (데이터셋 로드 및 병렬 처리)
 num_cores = os.cpu_count()
 train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=int(num_cores/2), shuffle=True)
 
-# GPU 사용 여부 확인
+# GPU 사용 여부 확인 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Restormer 모델 인스턴스 생성 및 GPU로 이동
 model = Restormer().to(device)
 
 # 손실 함수와 최적화 알고리즘 설정
-optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-criterion = nn.L1Loss()  # 손실 함수 설정
-scaler = GradScaler()  # Mixed Precision 훈련을 위한 GradScaler 설정
-scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)  # 학습률 스케줄러 설정
+optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-4) # 가중치 업데이트
+criterion = nn.L1Loss()  # 예측된 이미지와 깨끗한 이미지의 차이를 절대값으로 측정
+scaler = GradScaler()  # Mixed Precision 훈련을 위한 GradScaler 설정(메모리 사용량 감소)
+scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)  # 학습률 스케줄러 설정(학습이 진행될수록 학습률 감소)
 
 # 모델의 파라미터 수 출력
 total_parameters = count_parameters(model)

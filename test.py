@@ -30,8 +30,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 
 # 데이터 경로 설정
-noisy_data_path = '/data/hyeokseung1208/unid/data/Test/noisy'  # 노이즈 이미지 경로
-output_path = '/data/hyeokseung1208/unid/data/Test/output'  # 결과 이미지 저장 경로
+noisy_data_path = './data/Test/noisy'  # 노이즈 이미지 경로
+output_path = './data/Test/output'  # 결과 이미지 저장 경로
 
 # 출력 경로가 존재하지 않으면 디렉토리 생성
 if not os.path.exists(output_path):
