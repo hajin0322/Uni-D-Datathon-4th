@@ -17,10 +17,21 @@ Self-Attention / DownScaling
 
 
 '''
-Multi-Head Downscaled Self-Attention (MDTA) 모듈
-MDTA는 이미지의 여러 영역을 보면서 각 영역이 얼마나 중요한지 찾고, 중요한 정보를 모아서 결과를 만드는 모델이다.
-다중 헤드로 나눠보면서 효율적으로 다양한 부분을 살펴보도록 도와주는 구조이다.
-# 중요 정보
+Multi-Dconv Head Transposed Attention (MDTA) 모듈
+R1280x0.png 파일 Restormer 구조 이미지에 MDTA 구조가 나와있습니다.
+기존의 SA(self-attention) 같은 경우에는 각 픽셀이 하나의 token(patch)라고 가정했을 때,
+하나의 이미지에서 W(Width) * H(Height) 만큼의 token들이 생깁니다.
+이때 SA는 한 픽셀과 다른 모든 픽셀과의 관계를 연산하게 되는데
+그러면 한 픽셀 당 연산은 W*H 번
+총 한 이미지당 (W*H) * (W*H) 번 진행하게 됩니다. 즉 제곱배로 커지죠.
+
+여기서는 해당 문제를 완화하고자 (WxH) 기준의 self-attetion을 하지 않고 channel 단위의 C x C self-attention 연산을 합니다.
+즉 채널 간의 관계를 볼 수 있는 것이죠.
+
+이미지를 구성하는 각 채널들은 서로 다른 특징을 담고 있는 데이터들이다.
+
+
+그래서 attention map의 크기가 CxC가 됩니다.
 '''
 class MDTA(nn.Module):
     def __init__(self, channels, num_heads):
@@ -57,8 +68,8 @@ class MDTA(nn.Module):
 
 '''
 Gated-Dconv Feed-Forward Network (GDFN) 모듈
-GDFN은 데이터를 한 번 필터링하는 모듈로, 중요한 정보를 선택하고 불필요한 정보는 줄여내는 역할을 한다.
-# 필터링
+여기에서도 Feed-Forward의 Fully-connected layer 대신에 DConv를 사용하여 연산 효율을 높였습니다.
+또한 DConv를 사용해서 GDFN 내부에서 계산할 때 채널 수를 한 번 늘렸다가 밖으로 결과를 내보낼 때 들어왔던 채널 수로 다시 맞춰줍니다.
 '''
 class GDFN(nn.Module):
     def __init__(self, channels, expansion_factor):
@@ -83,8 +94,7 @@ class GDFN(nn.Module):
 
 '''
 트랜스포머 블록 모듈
-MDTA와 GDFN을 결합해 중요 정보 탐색 및 강화 과정을 반복하는 모듈이다.
-# 중요 정보 # 필터링
+MDTA와 GDFN을 결합해 중요 정보 탐색 및 강화 과정을 반복하는 모듈입니다.
 '''
 class TransformerBlock(nn.Module):
     def __init__(self, channels, num_heads, expansion_factor):
@@ -106,8 +116,7 @@ class TransformerBlock(nn.Module):
 
 '''
 Down-sampling 모듈
-DownSampling은 입력을 조금 더 작고 효율적으로 만들어주는 역할을 하며, 계산량을 줄이기 위한 모듈이다.
-# 효율
+DownSampling은 입력을 조금 더 작고 효율적으로 만들어주는 역할을 하며, 계산량을 줄이기 위한 모듈입니다.
 '''
 class DownSample(nn.Module):
     def __init__(self, channels):
